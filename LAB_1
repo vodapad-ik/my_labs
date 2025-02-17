@@ -1,0 +1,147 @@
+//1. С клавиатуры заполнить файл целыми числами.
+//2. Посчитать количество отрицательных элементов.
+//3. Заменить отрицательные элементы значением максимального элемента.
+//4. Выполнить сортировку отрицательных чисел в файле
+
+#include "integer_type.h"
+
+void file_bin_write(const char* file_name) {
+	FILE* file;
+	errno_t err = fopen_s(&file, file_name, "wb");
+	if (err != 0 || file == NULL) {
+		perror("Не удалось открыть файл...");
+		exit(1);
+	}
+	puts("Заполните файл целыми числами. Для окончания заполнения нажмите на пробел...");
+	while (1) {
+		short flag = 1;
+		int num = input_inum(&flag);
+		putchar('\n');
+		if (!flag) break;
+		fwrite(&num, sizeof(int), 1, file);
+		if (flag < 0) break;
+	}
+	fclose(file);
+}
+
+int search_max(FILE* const file) {
+	int num, max = INT_MIN;
+	rewind(file);
+	while (fread(&num, sizeof(int), 1, file)) {
+		if (max < num) max = num;
+	}
+	rewind(file);
+	return max;
+}
+
+int count_negative_num(FILE* const file) {
+	int num, count = 0;
+	rewind(file);
+	while (fread(&num, sizeof(int), 1, file)) {
+		if (num < 0) count++;
+	}
+	rewind(file);
+	return count;
+}
+
+void replase_with_max(FILE* file, int max) {
+	int num;
+	rewind(file);
+	while (fread(&num, sizeof(int), 1, file)) {
+		if (num < 0) {
+			fseek(file, -(long)sizeof(int), SEEK_CUR);
+			fwrite(&max, sizeof(int), 1, file);
+			fflush(file);
+		}
+	}
+	rewind(file);
+}
+
+void sort_negative_num(FILE* file) {
+	int key, j, temp;
+	fseek(file, 0, SEEK_END);
+	int size = ftell(file) / sizeof(int);
+
+	for (int i = 1; i < size; i++) {
+		fseek(file, i * sizeof(int), SEEK_SET);
+		fread(&key, sizeof(int), 1, file);  
+		if (key < 0) { 
+			j = i - 1;
+
+			while (j >= 0) {
+				fseek(file, j * sizeof(int), SEEK_SET);
+				fread(&temp, sizeof(int), 1, file);
+
+				if (temp >= 0 || temp <= key) break; 
+
+				fseek(file, (j + 1) * sizeof(int), SEEK_SET);
+				fwrite(&temp, sizeof(int), 1, file);
+				j--;
+			}
+			fseek(file, (j + 1) * sizeof(int), SEEK_SET);
+			fwrite(&key, sizeof(int), 1, file);
+		}
+	}
+	fflush(file);
+	rewind(file);
+}
+
+
+void display_data(FILE* const file) {
+	int num;
+	fseek(file, 0, SEEK_END);
+	int size = ftell(file) / sizeof(int);
+	rewind(file);
+	puts("+----------+----------+----------+----------+----------+----------+----------+----------+");
+	for (size_t i = 0; i < size && fread(&num, sizeof(int), 1, file); i++){
+		printf("| %8d ", num);
+		if ((i + 1) % 8 == 0 || i == size - 1) {
+			puts("|");
+			puts("+----------+----------+----------+----------+----------+----------+----------+----------+");
+		}
+	}
+	putchar('\n');
+	rewind(file);
+}
+
+
+int main(int argc, char*argv[]) {
+	setlocale(LC_ALL, "Rus");
+	if (argc < 2) {
+		perror("Введите имя файла в качестве аргумента командной строки...");
+		return EXIT_FAILURE;
+	}
+	const char* filename = argv[1];
+
+	do {
+		file_bin_write(filename);
+
+		FILE* file;
+		errno_t err = fopen_s(&file, filename, "r+b");
+		if (err != 0 || file == NULL) {
+			perror("Не удалось открыть файл...");
+			exit(1);
+		}
+
+		int max = search_max(file), count = count_negative_num(file);
+		system("cls");
+		puts("Ваши введенные данные, занесённые в файл:");
+		display_data(file);
+		if (!count) {
+			puts("Количество отрицательных элементов равно нулю...");
+			fclose(file);
+			continue;
+		}
+		printf("-Кол-во отрицательных элементов: %d\n", count);
+		puts("-Файл после сортировки отрицательных элементов: ");
+		sort_negative_num(file);
+		display_data(file);
+
+		printf("-Файл после замены отрицательных элементов на максимальный (%d):\n", max);
+		replase_with_max(file, max);
+		display_data(file);
+
+	   fclose(file);
+	} while (puts("Введите '1' для повторения операций...\n\n"), _getch() == '1');
+	return 0;
+}
