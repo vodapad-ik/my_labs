@@ -1,0 +1,132 @@
+//1. С клавиатуры заполнить файл словами. Вывести содержимое файла на экран.
+//2. Найти в файле слово минимальной длины и вывести его на экран. Если таких слов несколько, вывести первое.
+//3. Поменять местами в файле два первых слова.
+
+#include "char_type.h"
+#include <conio.h>
+
+size_t file_txt_write(const char* file_name) {
+	size_t size;
+	FILE* file;
+	errno_t err = fopen_s(&file, file_name, "w");
+	if (err != 0 || file == NULL) {
+		perror("Не удалось открыть файл...");
+		exit(1);
+	}
+
+	puts("Заполните файл. Для окончания заполнения нажмите на enter...");
+	char* str = input_str(&size);
+	fputs(str, file);
+	free(str);
+	fclose(file);
+	return size;
+}
+
+const char* search_min_word(FILE* file) {
+	int len_min = INT_MAX, len = 0, position, p = 0;
+	char ch;
+	rewind(file);
+	while (1) {
+		if ((ch = fgetc(file)) == ' ' || ch == EOF || ch == '\n' || ch == '\t') {
+			if (len != 0 && len_min > len) {
+				position = p;
+				len_min = len;
+			}
+			if (ch == EOF) break;
+			len = 0;
+			p = ftell(file);
+		}
+		else len++;
+	}
+	char* word = (char*)calloc(len_min + 1, sizeof(char));
+	char* ptr = word;
+	fseek(file, position, SEEK_SET);
+	while ((ch = fgetc(file)) != ' ' && ch != '\n' && ch != '\t' && ch != EOF) {
+		*ptr = ch;
+		ptr++;
+	}
+	*ptr = '\0';
+	return word;
+}
+
+void swap_to_first_two_words(FILE* file) {
+	unsigned count = 0, flag = 0, start_first_word, start_second_word, len_1 = 0, len_2 = 0;
+	char ch;
+	rewind(file);
+	while ((ch = fgetc(file))!=EOF && count < 3) {
+		if (ch == ' ' || ch == '\n' || ch == '\t') {
+			flag = 0;
+			continue;
+		}
+		else if (!flag) {
+			flag = 1;
+			count++;
+		}
+		if (count == 1) {
+			if (!len_1) start_first_word = ftell(file) - 1;
+			len_1++;
+		}
+		else if (count == 2) {
+			if (!len_2) start_second_word = ftell(file) - 1;
+			len_2++;
+		}
+	}
+	unsigned space_len = start_second_word - start_first_word - len_1;
+	char* word_1 = (char*)calloc(len_1+1, sizeof(char));
+	char* word_2 = (char*)calloc(len_2 + 1, sizeof(char));
+	char* space = (char*)calloc(space_len + 1, sizeof(char));
+
+	fseek(file, start_first_word, SEEK_SET);
+	for (int i = 0; i < len_1; i++) word_1[i] = getc(file);
+	word_1[len_1] = '\0';
+
+	fseek(file, start_second_word, SEEK_SET);
+	for (int i = 0; i < len_2; i++) word_2[i] = getc(file);
+	word_2[len_2] = '\0';
+
+	fseek(file, start_first_word + len_1, SEEK_SET);
+	for (int i = start_first_word + len_1, j = 0; i < start_second_word; i++, j++) space[j] = getc(file);
+	space[space_len] = '\0';
+
+	rewind(file);
+	fprintf(file, "%s%s%s", word_2, space, word_1);
+	fflush(file);
+}
+
+int main(int argc, char* argv[]) {
+	setlocale(LC_ALL, "Rus");
+	if (argc < 2) {
+		perror("Введите имя файла в качестве аргумента командной строки...");
+		return EXIT_FAILURE;
+	}
+	const char* filename = argv[1];
+
+	do {
+		file_txt_write(filename);
+		FILE* file;
+		errno_t err_1 = fopen_s(&file, filename, "r+");
+		if (err_1 != 0 || file == NULL) {
+			perror("Не удалось открыть файл для редактрования...");
+			exit(1);
+		}
+
+		if (count_words(file) < 2) {
+			puts("Пожалуйста, введите минимум два слова...");
+			fclose(file);
+			continue;
+		}
+		system("cls");
+		char ch;
+		puts("Введенное Вами содержимое файла: \n");
+		while ((ch = fgetc(file)) != EOF) putchar(ch);
+		puts("\n________________________________________________________________________________________________________________________");
+		printf("\nСлово минимальной длины: |%s|\n", search_min_word(file));
+		puts("________________________________________________________________________________________________________________________");
+		puts("Cодержимое файла с учетом перестановки перестановки двух слов: \n");
+		swap_to_first_two_words(file);
+		rewind(file);
+		while ((ch = fgetc(file)) != EOF) putchar(ch);
+		fclose(file);
+	} while (puts("\n\nВведите '1' для повторения операций.\n"), _getch() == '1');
+	return 0;
+}
