@@ -1,0 +1,202 @@
+#ifndef TASK1
+#define TASK1
+
+#include "integer_type.h"
+#include "char_type.h"
+
+
+typedef struct {
+	char departure_date[11];
+	int travel_time;
+}time_info;
+
+typedef struct {
+	int flight_number;
+	char* surname;
+	time_info time;
+}passenger;
+
+passenger* writeInfoPassenger(int* size) {
+	int i = 0;
+	passenger* arr = (passenger*)calloc(*size, sizeof(passenger));
+	if (!arr) {
+		fprintf(stderr, "ВНИМАНИЕ!!! Ошибка выделения памяти...\n");
+		exit(1);
+	}
+	while (1) {
+		if (i >= *size) {
+			passenger* temp = (passenger*)realloc(arr, (*size + 1) * sizeof(passenger));
+			if (!temp) {
+				fprintf(stderr, "Ошибка выделения памяти.\n");
+				free(arr);
+				exit(1);
+			}
+			arr = temp;
+			(*size)++;
+		}
+		short flag = 0;
+		printf("Введите фамилию пассажира №%d: ", i + 1);
+		char* surname = input_str(&flag);
+		if (flag)break;
+		arr[i].surname = surname;
+		printf("\nВведите номер рейса заданного пассажира №: ");
+		arr[i].flight_number = input_uninum(&flag);
+		int day = (rand() % 29) + 1;
+		int month = (rand() % 12) + 1;
+		int year = (rand() % 100) + 2000;
+		snprintf(arr[i].time.departure_date, sizeof(arr[i].time.departure_date), "%02d.%02d.%04d", day, month, year);
+		if (year > 2025) arr[i].time.travel_time = 0;
+		else arr[i].time.travel_time = (rand() % 43200) + 3600;
+		i++;
+		if (flag)break;
+		puts("\n________________________________________________________________________________________________________________________");
+	}
+	system("cls");
+	*size = i;
+	return arr;
+}
+
+void printInfoPassenger(passenger arr[], int size) {
+	if (size == 0) {
+		puts("Элементы отсутствуют...");
+		return;
+	}
+	for (int i = 0; i < size; i++) {
+		puts("________________________________________________________________________________________________________________________");
+		printf("\nФамилия пассажира №%d: %s\n", i + 1, arr[i].surname);
+		printf("\nНомер рейса i-ого пассажира №: %d\n", arr[i].flight_number);
+		printf("\nДата рейса i-ого пассажира №: %s\n", arr[i].time.departure_date);
+		printf("\nКоличество секунд, проведенных в пути i-ого пассажира №: %d\n", arr[i].time.travel_time);
+	}
+	puts("\n________________________________________________________________________________________________________________________");
+}
+
+passenger* removeInfoPassenger(passenger* arr, int* size) {
+	puts("Введите фамилию пассажира, данные которого необходимо удалить: ");
+	short flag;
+	char* str = input_str(&flag);
+	int new_size = 0;
+	for (int i = 0; i < *size; i++) {
+		if (my_strcmp(str, arr[i].surname) != 0) arr[new_size++] = arr[i];
+		else free(arr[i].surname);
+	}
+	if (new_size == *size) {
+		puts("Пассажир с заданной фамилией не найден...");
+		free(str);
+		return arr;
+	}
+	passenger* new_arr = (passenger*)realloc(arr, new_size * sizeof(passenger));
+	if (!new_arr && new_size > 0) {
+		fprintf(stderr, "Ошибка выделения памяти...\n");
+		exit(1);
+	}
+	*size = new_size;
+	free(str);
+	return new_arr;
+}
+
+void searchPassenger(passenger arr[], int size, int flight_number) {
+	int count = 0;
+	for (int i = 0, n = 0; i < size; i++) {
+		if (flight_number == arr[i].flight_number) {
+			puts("________________________________________________________________________________________________________________________");
+			printf("\nФамилия пассажира №%d: %s\n", i + 1, arr[i].surname);
+			printf("\nНомер рейса i-ого пассажира №: %d\n", arr[i].flight_number);
+			printf("\nДата рейса i-ого пассажира №: %s\n", arr[i].time.departure_date);
+			printf("\nКоличество секунд, проведенных в пути i-ого пассажира №: %d\n", arr[i].time.travel_time);
+			puts("\n________________________________________________________________________________________________________________________");
+			count++;
+		}
+	}
+	if (!count) puts("\nПассажир с заданым номером рейса не найден...");
+}
+
+#endif
+
+
+#ifndef TASK2
+#define TASK2
+
+#include <stdio.h>
+#include <conio.h>
+#include <stdlib.h>
+#include <locale.h>
+#include "double_type.h"
+
+typedef struct {
+	unsigned char byte1 : 8;
+	unsigned char byte2 : 8;
+	unsigned char byte3 : 8;
+	unsigned char byte4 : 8;
+	unsigned char byte5 : 8;
+	unsigned char byte6 : 8;
+	unsigned char byte7 : 8;
+	unsigned char byte8 : 8;
+} BYTES;
+
+typedef union {
+	BYTES bytes;
+	double num;
+} numBYTE;
+
+#endif
+
+
+//1.Для вещественного числа (double) вывести содержимое каждого байта (в десятичной системе счисления).
+//2.Структура содержит информацию о пассажирах : номер рейса(число), фамилию(указатель), 
+// вложенную структуру – дату выезда(строка фиксированной длины) и количество минут в пути. 
+// Найти пассажиров заданного рейса.Удалить пассажиров заданной фамилией.
+
+#include "TASK1.h"
+#include "TASK2.h"
+
+int main(){
+	setlocale(LC_ALL, "Rus");
+	srand(unsigned(time(NULL)));
+	///*
+	int size = 2;
+	puts("Введите данные пассажиров (фамилия, номер рейса). Для завершения ввода данных (фамилии и номера рейса) нажмите на пробел...");
+	passenger* arr = writeInfoPassenger(&size);
+	if (!size) {
+		puts("Элементы отсутствуют...");
+		return 1;
+	}
+	puts("Исходный список пассажиров: ");
+	printInfoPassenger(arr, size);
+	char ch;
+	while (puts("Выбирете операции со списком пассажиров: '1' - удаление определенных пассажиров с заданной фамилией, \n'2' - поиск пассажира с заданным номером рейса."), (ch = _getch()) == '1' || ch == '2') {
+		if (ch == '1') {
+			do {
+				arr = removeInfoPassenger(arr, &size);
+			} while (puts("\nДля повторного удаления введите '1'.\n"), _getch() == '1');
+			puts("Список пассажиров после удаления заданного(ых) пассажира(ов): ");
+			printInfoPassenger(arr, size);
+		}
+		else if (ch == '2') {
+			do {
+				short flag;
+				printf("Введите номер рейса пассажира: ");
+				searchPassenger(arr, size, input_uninum(&flag));
+				putchar('\n');
+			} while (puts("\nДля повторного поиска введите '1'.\n"), _getch() == '1');
+		}
+	}
+	for (int i = 0; i < size; i++) free(arr[i].surname);
+	free(arr);
+	//*/
+	system("cls");
+	printf("Введите число с плавающей запятой: ");
+	numBYTE number;
+	number.num = input_dnum();
+	puts("\n________________________________________________________________________________________________________________________");
+	printf("\nБайт 1: %d\n", number.bytes.byte1);
+	printf("Байт 2: %d\n", number.bytes.byte2);
+	printf("Байт 3: %d\n", number.bytes.byte3);
+	printf("Байт 4: %d\n", number.bytes.byte4);
+	printf("Байт 5: %d\n", number.bytes.byte5);
+	printf("Байт 6: %d\n", number.bytes.byte6);
+	printf("Байт 7: %d\n", number.bytes.byte7);
+	printf("Байт 8: %d", number.bytes.byte8);
+	puts("\n________________________________________________________________________________________________________________________");
+	return 0;
+}
