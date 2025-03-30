@@ -1,0 +1,388 @@
+#include "integer_type.h"
+
+#ifndef two_int_stack
+#define two_int_stack
+
+
+typedef struct {
+	int top;
+	int max_size;
+	int* arr;
+} STACK;
+
+STACK* createStack(unsigned max_size) {
+	STACK* Stack = (STACK*)calloc(1, sizeof(STACK));
+	if (!Stack) {
+		fprintf(stderr, "ВНИМАНИЕ!!! Ошибка выделения памяти...\n");
+		exit(1);
+	}
+	Stack->arr = (int*)calloc(max_size, sizeof(int));
+	if (!Stack->arr) {
+		fprintf(stderr, "ВНИМАНИЕ!!! Ошибка выделения памяти...\n");
+		free(Stack);
+		exit(1);
+	}
+	Stack->top = -1;
+	Stack->max_size = max_size;
+	return Stack;
+}
+
+void push(STACK* Stack, int num) {
+	if (Stack->top >= Stack->max_size-1) {
+		puts("Внимание, стек переполнен...");
+		return;
+	}
+	Stack->arr[++Stack->top] = num;
+}
+
+void freeStack(STACK* Stack) {
+	if (Stack) {
+		free(Stack->arr);
+		free(Stack);
+	}
+}
+
+void beauty_iprintf(const int* arr, size_t size) {
+	puts("+----------+----------+----------+----------+----------+----------+----------+----------+");
+	for (size_t i = 0; i < size; i++) {
+		printf("| %8d ", arr[i]);
+		if ((i + 1) % 8 == 0 || i == size - 1) {
+			puts("|");
+			puts("+----------+----------+----------+----------+----------+----------+----------+----------+");
+		}
+	}
+	putchar('\n');
+}
+int findMax(STACK* Stack) {
+	int max_i = 0;
+	for (int i = 0; i < Stack->top+1; i++) {
+		if (Stack->arr[max_i] < Stack->arr[i]) max_i = i;
+	}
+	return max_i;
+}
+int findSum(STACK* Stack) {
+	int max_i = findMax(Stack), sum = 0;
+	if (!max_i) {
+		puts("Максимальный элемент стоит в начале.");
+		return 0;
+	}
+	for (int i = 0; i < max_i; i++) {
+		sum += Stack->arr[i];
+	}
+	printf("\nСумма элементов стека, расположенных до максимального (т.е. до %d): %d", Stack->arr[max_i], sum);
+}
+
+void prossesOfStacks1() {
+	printf("Введите максимальный размер стека: ");
+	STACK* stack = createStack(input_uninum());
+
+	puts("Заполните стек целыми числами. Для окончания заполнения нажмите на пробел...");
+	for (int i = 0; i < stack->max_size; i++) {
+		short flag = 1;
+		int num = input_inum(&flag);
+		putchar('\n');
+		if (!flag) break;
+		push(stack, num);
+		if (flag < 0) break;
+	}
+	system("cls");
+
+	
+	printf("Стек (максимальный размер - %d): \n", stack->max_size);
+	beauty_iprintf(stack->arr, stack->top + 1);
+	findSum(stack);
+	freeStack(stack);
+}
+
+#endif
+
+#include "two_int_stack.h"
+
+int isEmpty(STACK* s) {
+	return s->top == -1;
+}
+
+int pop(STACK* Stack) {
+	if (isEmpty(Stack)) {
+		puts("Ошибка: попытка извлечь элемент из пустого стека!");
+		return -1;
+	}
+	return Stack->arr[Stack->top--]; 
+}
+
+int peek(STACK* s) {
+	if (!isEmpty(s)) {
+		return s->arr[s->top];
+	}
+	return -1;
+}
+
+void prossesOfStacks2() {
+	printf("Введите максимальный размер первого стека: ");
+	STACK* stack1 = createStack(input_uninum());
+
+	puts("Заполните первый стек целыми числами. Для окончания заполнения нажмите на пробел...");
+	for (int i = 0; i < stack1->max_size;) {
+		if (stack1->top == -1) {
+			short flag = 1;
+			int num = input_inum(&flag);
+			putchar('\n');
+			if (!flag) break;
+			push(stack1, num);
+			if (flag < 0) break;
+			i++;
+		}
+		else {
+			short flag = 1;
+			int num = input_inum(&flag);
+			if (num <= stack1->arr[stack1->top] || flag ==0 || flag<0) {
+				putchar('\n');
+				if (!flag) break;
+				push(stack1, num);
+				i++;
+				if (flag < 0) break;
+			}
+			else puts("\nВведите число не больше предыдущего...");
+		}
+	}
+	system("cls");
+
+	printf("Введите максимальный размер второго стека: ");
+	STACK* stack2 = createStack(input_uninum());
+	puts("Заполните второй стек целыми числами. Для окончания заполнения нажмите на пробел...");
+	for (int i = 0; i < stack2->max_size;) {
+		if (stack2->top == -1) {
+			short flag = 1;
+			int num = input_inum(&flag);
+			putchar('\n');
+			if (!flag) break;
+			push(stack2, num);
+			if (flag < 0) break;
+			i++;
+		}
+		else {
+			short flag = 1;
+			int num = input_inum(&flag);
+			if (num >= stack2->arr[stack2->top] || flag == 0 || flag < 0) {
+				putchar('\n');
+				if (!flag) break;
+				push(stack2, num);
+				i++;
+				if (flag < 0) break;
+			}
+			else puts("\nВведите число не меньше предыдущего...");
+		}
+	}
+
+	system("cls");
+	printf("Стек №1 (максимальный размер - %d): \n", stack1->max_size);
+	beauty_iprintf(stack1->arr, stack1->top + 1);
+	printf("\nСтек №2 (максимальный размер - %d): \n", stack2->max_size);
+	beauty_iprintf(stack2->arr, stack2->top + 1);
+
+	STACK* stack3 = createStack(stack1->max_size + stack2->max_size);
+	STACK* tempStack = createStack(stack1->max_size + stack2->max_size);
+	
+	while (!isEmpty(stack2)) push(tempStack, pop(stack2));
+
+	while (!isEmpty(tempStack) && !isEmpty(stack1)) {
+		if (peek(tempStack) <= peek(stack1)) {
+			push(stack3, pop(tempStack));
+		}
+		else {
+			push(stack3, pop(stack1));
+		}
+	}
+
+	while (!isEmpty(tempStack)) push(stack3, pop(tempStack));
+	while (!isEmpty(stack1)) push(stack3, pop(stack1));
+	
+
+	puts("\nСтек №3 (по возрастанию):");
+	beauty_iprintf(stack3->arr, stack3->top + 1);
+
+	freeStack(stack1);
+	freeStack(stack2);
+	freeStack(tempStack);
+	freeStack(stack3);
+}
+
+int main() {
+	setlocale(LC_ALL, "Rus");
+	//prossesOfStacks2();
+	prossesOfStacks1();
+	return 0;
+}
+
+/*#include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
+#include <string.h>
+#include <math.h>
+
+#define MAX_EXPR 256
+#define MAX_STACK 256
+
+typedef struct {
+    double data[MAX_STACK];
+    int top;
+} Stack;
+
+void push(Stack* s, double value) {
+    if (s->top < MAX_STACK - 1) {
+        s->data[++(s->top)] = value;
+    }
+}
+
+double pop(Stack* s) {
+    if (s->top >= 0) {
+        return s->data[(s->top)--];
+    }
+    return 0;
+}
+
+int precedence(char op) {
+    if (op == '+' || op == '-') return 1;
+    if (op == '*' || op == '/') return 2;
+    return 0;
+}
+
+int isOperator(char c) {
+    return c == '+' || c == '-' || c == '*' || c == '/';
+}
+
+int validateExpression(const char* expr, int* errorPos) {
+    Stack s;
+    s.top = -1;
+    int i = 0, lastWasOperator = 1;
+    while (expr[i]) {
+        if (expr[i] == '(') {
+            push(&s, '(');
+        }
+        else if (expr[i] == ')') {
+            if (s.top == -1) {
+                *errorPos = i;
+                return 0;
+            }
+            pop(&s);
+        }
+        else if (isOperator(expr[i])) {
+            if (lastWasOperator) {
+                *errorPos = i;
+                return 0;
+            }
+            lastWasOperator = 1;
+        }
+        else if (isdigit(expr[i]) || expr[i] == '.') {
+            lastWasOperator = 0;
+        }
+        else if (!isspace(expr[i])) {
+            *errorPos = i;
+            return 0;
+        }
+        i++;
+    }
+    if (s.top != -1) {
+        *errorPos = i;
+        return 0;
+    }
+    return 1;
+}
+
+double evaluatePostfix(const char* postfix) {
+    Stack s;
+    s.top = -1;
+    char* token = NULL;
+    char* context = NULL;
+    char* postfixCopy = _strdup(postfix);  // Use _strdup instead of strdup
+    token = strtok_s(postfixCopy, " ", &context);
+    while (token) {
+        if (isdigit(token[0]) || (token[0] == '-' && isdigit(token[1]))) {
+            push(&s, atof(token));
+        }
+        else {
+            double b = pop(&s);
+            double a = pop(&s);
+            switch (token[0]) {
+            case '+': push(&s, a + b); break;
+            case '-': push(&s, a - b); break;
+            case '*': push(&s, a * b); break;
+            case '/': push(&s, a / b); break;
+            }
+        }
+        token = strtok_s(NULL, " ", &context);
+    }
+    free(postfixCopy);  // Free memory allocated by _strdup
+    return pop(&s);
+}
+
+void infixToPostfix(const char* infix, char* postfix) {
+    Stack s;
+    s.top = -1;
+    int j = 0;
+    for (int i = 0; infix[i]; i++) {
+        if (isdigit(infix[i]) || infix[i] == '.') {
+            postfix[j++] = infix[i];
+        }
+        else {
+            postfix[j++] = ' ';
+            if (infix[i] == '(') {
+                push(&s, '(');
+            }
+            else if (infix[i] == ')') {
+                while (s.top != -1 && s.data[s.top] != '(') {
+                    postfix[j++] = pop(&s);
+                    postfix[j++] = ' ';
+                }
+                pop(&s);
+            }
+            else if (isOperator(infix[i])) {
+                while (s.top != -1 && precedence(s.data[s.top]) >= precedence(infix[i])) {
+                    postfix[j++] = pop(&s);
+                    postfix[j++] = ' ';
+                }
+                push(&s, infix[i]);
+            }
+        }
+    }
+    while (s.top != -1) {
+        postfix[j++] = ' ';
+        postfix[j++] = pop(&s);
+    }
+    postfix[j] = '\0';
+}
+
+void processFile(const char* inputFile, const char* outputFile) {
+    FILE* in, * out;
+    errno_t err1= fopen_s(&in, inputFile, "r");
+    errno_t err2 = fopen_s(&out, outputFile, "w");
+    if (err1 != 0 || err2!=0) {
+        perror("Не удалось открыть файл...");
+        exit(1);
+    }
+    if (!in || !out) {
+        printf("Ошибка при открытии файлов.\n");
+        return;
+    }
+    char expr[MAX_EXPR];
+    while (fgets(expr, MAX_EXPR, in)) {
+        int errorPos;
+        if (!validateExpression(expr, &errorPos)) {
+            fprintf(out, "Ошибка в позиции %d\n", errorPos);
+        }
+        else {
+            char postfix[MAX_EXPR] = "";
+            infixToPostfix(expr, postfix);
+            double result = evaluatePostfix(postfix);
+            fprintf(out, "%.6f\n", result);
+        }
+    }
+    fclose(in);
+    fclose(out);
+}
+
+int main() {
+    processFile("input.txt", "output.txt");
+    return 0;
+}
+*/
