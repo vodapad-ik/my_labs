@@ -218,41 +218,40 @@ int main() {
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
-#include <math.h>
 
 #define MAX_EXPR 256
 #define MAX_STACK 256
 
 typedef struct {
-    double data[MAX_STACK];
+    double data[MAX_EXPR];
     int top;
-} Stack;
+} STACK;
 
-void push(Stack* s, double value) {
-    if (s->top < MAX_STACK - 1) {
+void push(STACK* s, double value) {
+    if (s->top < MAX_EXPR - 1) {
         s->data[++(s->top)] = value;
     }
 }
 
-double pop(Stack* s) {
+double pop(STACK* s) {
     if (s->top >= 0) {
         return s->data[(s->top)--];
     }
     return 0;
 }
 
-int precedence(char op) {
-    if (op == '+' || op == '-') return 1;
-    if (op == '*' || op == '/') return 2;
+int priority(char opr) {
+    if (opr == '+' || opr == '-') return 1;
+    if (opr == '*' || opr == '/') return 2;
     return 0;
 }
 
-int isOperator(char c) {
+int isOper(char c) {
     return c == '+' || c == '-' || c == '*' || c == '/';
 }
 
 int validateExpression(const char* expr, int* errorPos) {
-    Stack s;
+    STACK s;
     s.top = -1;
     int i = 0, lastWasOperator = 1;
     while (expr[i]) {
@@ -266,7 +265,7 @@ int validateExpression(const char* expr, int* errorPos) {
             }
             pop(&s);
         }
-        else if (isOperator(expr[i])) {
+        else if (isOper(expr[i])) {
             if (lastWasOperator) {
                 *errorPos = i;
                 return 0;
@@ -290,11 +289,11 @@ int validateExpression(const char* expr, int* errorPos) {
 }
 
 double evaluatePostfix(const char* postfix) {
-    Stack s;
+    STACK s;
     s.top = -1;
     char* token = NULL;
     char* context = NULL;
-    char* postfixCopy = _strdup(postfix);  // Use _strdup instead of strdup
+    char* postfixCopy = _strdup(postfix);  
     token = strtok_s(postfixCopy, " ", &context);
     while (token) {
         if (isdigit(token[0]) || (token[0] == '-' && isdigit(token[1]))) {
@@ -312,12 +311,12 @@ double evaluatePostfix(const char* postfix) {
         }
         token = strtok_s(NULL, " ", &context);
     }
-    free(postfixCopy);  // Free memory allocated by _strdup
+    free(postfixCopy);  
     return pop(&s);
 }
 
 void infixToPostfix(const char* infix, char* postfix) {
-    Stack s;
+    STACK s;
     s.top = -1;
     int j = 0;
     for (int i = 0; infix[i]; i++) {
@@ -336,8 +335,8 @@ void infixToPostfix(const char* infix, char* postfix) {
                 }
                 pop(&s);
             }
-            else if (isOperator(infix[i])) {
-                while (s.top != -1 && precedence(s.data[s.top]) >= precedence(infix[i])) {
+            else if (isOper(infix[i])) {
+                while (s.top != -1 && priority(s.data[s.top]) >= priority(infix[i])) {
                     postfix[j++] = pop(&s);
                     postfix[j++] = ' ';
                 }
@@ -356,14 +355,11 @@ void processFile(const char* inputFile, const char* outputFile) {
     FILE* in, * out;
     errno_t err1= fopen_s(&in, inputFile, "r");
     errno_t err2 = fopen_s(&out, outputFile, "w");
-    if (err1 != 0 || err2!=0) {
+    if (err1 != 0 || err2!=0 || !in || !out) {
         perror("Не удалось открыть файл...");
         exit(1);
     }
-    if (!in || !out) {
-        printf("Ошибка при открытии файлов.\n");
-        return;
-    }
+
     char expr[MAX_EXPR];
     while (fgets(expr, MAX_EXPR, in)) {
         int errorPos;
