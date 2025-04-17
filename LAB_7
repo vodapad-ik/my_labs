@@ -1,0 +1,114 @@
+//10. Вывести все листья дерева поиска в порядке возрастания.
+#include "integer_type.h"
+
+typedef struct NODE {
+    int data;
+    struct NODE* left;
+    struct NODE* right;
+} NODE;
+
+NODE* createNode(int data) {
+    NODE* node = (NODE*)cAllocate(1, sizeof(NODE));
+    node->data = data;
+    node->left = node->right = NULL;
+    return node;
+}
+
+NODE* addNode(NODE* root, int data) {
+    if (!root) return createNode(data);
+
+    if (data < root->data) root->left = addNode(root->left, data);
+    else root->right = addNode(root->right, data);
+    return root;
+}
+
+void printTree(NODE* root, int level) {
+    if (root == NULL) return;
+    printTree(root->right, level + 1);
+    for (int i = 0; i < level; i++) printf("    ");
+    printf("%d\n", root->data);
+    printTree(root->left, level + 1);
+}
+
+NODE* findMinNode(NODE* root) {
+    if (!root) return NULL;
+    while (root->left) root = root->left;
+    return root;
+}
+int nodeExists(NODE* root, int data) {
+    if (root == NULL) return 0;
+    if (data == root->data) return 1;
+    if (data < root->data) return nodeExists(root->left, data);
+    return nodeExists(root->right, data);
+}
+
+NODE* deleteNode(NODE* root, int data) {
+    if (!root) {
+        printf("Элемент %d не найден в дереве.\n", data);
+        return NULL;
+    }
+
+    if (data < root->data) {
+        root->left = deleteNode(root->left, data);
+    }
+    else if (data > root->data) {
+        root->right = deleteNode(root->right, data);
+    }
+    else {
+        if (!root->left) {
+            NODE* temp = root->right;
+            free(root);
+            printf("Элемент %d успешно удален.\n", data);
+            return temp;
+        }
+        else if (!root->right) {
+            NODE* temp = root->left;
+            free(root);
+            printf("Элемент %d успешно удален.\n", data);
+            return temp;
+        }
+
+        NODE* temp = findMinNode(root->right);
+        root->data = temp->data;
+        root->right = deleteNode(root->right, temp->data);
+        printf("Элемент %d успешно удален.\n", data);
+    }
+    return root;
+}
+
+void printLeavesInOrder(NODE* root) {
+    if (!root) return;
+    printLeavesInOrder(root->left); 
+    if (!root->left && !root->right)
+        printf("%d ", root->data);   
+    printLeavesInOrder(root->right); 
+}
+
+int main() {
+    setlocale(LC_ALL, "Rus");
+    puts("Заполните дерево: ");
+    NODE* root = NULL;
+    while (1) {
+        short flag = 1;
+        int num = input_inum(&flag);
+        putchar('\n');
+        if (!flag) break;
+        root = addNode(root, num);
+        if (flag < 0) break;
+    }
+    printTree(root, 0);
+    puts("Листья дерева в порядке возрастания: ");
+    printLeavesInOrder(root);
+
+    puts("\nВведите элементы дерева, которые необходимо удалить: ");
+    while (1) {
+        short flag = 1;
+        int num = input_inum(&flag);
+        putchar('\n');
+        if (!flag) break;
+        root = deleteNode(root, num);
+        if (flag < 0) break;
+    }
+    printTree(root, 0);
+    return 0;
+}
